@@ -10,6 +10,22 @@ const { authenticateToken, allowRoles } = require("./auth");
 const app = express();
 const path = require("path");
 const pool = require("./db");
+app.get("/api/db-test", async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT 1 AS result");
+        res.json({
+            success: true,
+            message: "Database connection successful!",
+            result: rows[0].result
+        });
+    } catch (error) {
+        console.error("Database test failed:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Database connection failed."
+        });
+    }
+});
 
 app.use(express.static(path.join(__dirname, "../frontend")));
 const PORT = process.env.PORT || 3000;
