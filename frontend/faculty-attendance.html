@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Attendance | MLRIT</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .attendance-container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 25px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .attendance-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .attendance-container label {
+            display: block;
+            margin-top: 15px;
+        }
+
+        .attendance-container input,
+        .attendance-container select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            box-sizing: border-box;
+        }
+
+        .attendance-container button {
+            margin-top: 20px;
+            padding: 10px 16px;
+            cursor: pointer;
+        }
+
+        #message {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h2>MLRIT Faculty Portal</h2>
+        <nav>
+            <a href="faculty-dashboard.html">Dashboard</a>
+            <a href="#" onclick="logout(); return false;">Logout</a>
+        </nav>
+    </header>
+
+    <div class="attendance-container">
+        <h2>Manage Student Attendance</h2>
+
+        <form id="attendanceForm">
+            <label for="studentId">Select Student</label>
+            <select id="studentId" required>
+                <option value="">Loading students...</option>
+            </select>
+
+            <label for="academicYear">Select Academic Year</label>
+            <select id="academicYear" required>
+                <option value="">Select year</option>
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+            </select>
+
+            <label for="semester">Select Semester</label>
+            <select id="semester" required disabled>
+                <option value="">Select semester</option>
+                <option value="1">1st Semester</option>
+                <option value="2">2nd Semester</option>
+            </select>
+
+            <label for="subject">Select Subject</label>
+            <select id="subject" required disabled>
+                <option value="">Select year and semester first</option>
+            </select>
+
+            <label for="attended">Classes Attended</label>
+            <input type="number" id="attended" min="0" step="1" required>
+
+            <label for="total">Total Classes</label>
+            <input type="number" id="total" min="1" step="1" required>
+
+            <button type="submit">Save Attendance</button>
+            <p id="message" role="status"></p>
+        </form>
+
+        <button type="button"
+            onclick="window.location.href='faculty-dashboard.html'">
+            Back to Faculty Dashboard
+        </button>
+    </div>
+
+    <script>
+        const token = sessionStorage.getItem("token");
+        const studentSelect = document.getElementById("studentId");
+        const academicYear = document.getElementById("academicYear");
+        const semester = document.getElementById("semester");
+        const subjectSelect = document.getElementById("subject");
+        const attendedInput = document.getElementById("attended");
+        const totalInput = document.getElementById("total");
+        const message = document.getElementById("message");
+
+        const subjects = {
+            "1-1": [
+                "Linear Algebra and Calculus",
+                "Programming for Problem Solving",
+                "Basic Electrical and Electronics Engineering",
+                "Electronic Devices and Applications",
+                "English for Skill Enhancement"
+            ],
+            "1-2": [
+                "Numerical Methods and Integral Transforms",
+                "Applied Physics",
+                "Engineering Chemistry",
+                "Elements of Computer Science and Engineering",
+                "Engineering Drawing"
+            ],
+            "2-1": [
+                "Computer Oriented Statistical Methods",
+                "Digital Electronics and Computer Organization",
+                "Data Structures",
+                "Object Oriented Programming Using Java",
+                "Software Engineering"
+            ],
+            "2-2": [
+                "Discrete Mathematics",
+                "Business Economics and Financial Analysis",
+                "Database Management Systems",
+                "Operating Systems",
+                "Software Testing Fundamentals"
+            ],
+            "3-1": [
+                "Design and Analysis of Algorithms",
+                "Cloud and DevOps",
+                "Computer Networks",
+                "Natural Language Processing",
+                "Information Retrieval System"
+            ],
+            "3-2": []
+        };
+
+        if (!token) {
+            window.location.href = "login.html?role=Faculty";
+        }
+
+        async function loadStudents() {
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/faculty/students",
+                    {
+                        headers: {
+                            Authorization: "Bearer " + token
+                        }
+                    }
+                );
+
+                const students = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        students.message || "Unable to load students."
+                    );
+                }
+
+                studentSelect.replaceChildren();
+
+                const defaultOption = document.createElement("option");
+                defaultOption.value = "";
+                defaultOption.textContent = "Select a student";
+                studentSelect.appendChild(defaultOption);
+
+                students.forEach(student => {
+                    const option = document.createElement("option");
+                    option.value = student.student_id;
+                    option.textContent =
+                        student.student_id + " - " + student.full_name;
+                    option.dataset.year = student.year_of_study;
+                    studentSelect.appendChild(option);
+                });
+
+                if (students.length === 0) {
+                    message.textContent = "No students found.";
+                }
+            } catch (error) {
+                message.textContent = error.message;
+            }
+        }
+
+        function updateSubjects() {
+            const year = academicYear.value;
+            const sem = semester.value;
+            const selectedSubjects = subjects[year + "-" + sem] || [];
+
+            subjectSelect.replaceChildren();
+
+            const option = document.createElement("option");
+            option.value = "";
+
+            if (!year || !sem) {
+                option.textContent = "Select year and semester first";
+            } else if (selectedSubjects.length === 0) {
+                option.textContent =
+                    "Subjects not added for this semester yet";
+            } else {
+                option.textContent = "Select a subject";
+            }
+
+            subjectSelect.appendChild(option);
+
+            selectedSubjects.forEach(subject => {
+                const subjectOption = document.createElement("option");
+                subjectOption.value = subject;
+                subjectOption.textContent = subject;
+                subjectSelect.appendChild(subjectOption);
+            });
+
+            subjectSelect.disabled = selectedSubjects.length === 0;
+        }
+
+        academicYear.addEventListener("change", function() {
+            semester.value = "";
+            semester.disabled = !academicYear.value;
+            updateSubjects();
+        });
+
+        semester.addEventListener("change", updateSubjects);
+
+        studentSelect.addEventListener("change", function() {
+            const selectedOption =
+                studentSelect.options[studentSelect.selectedIndex];
+
+            const studentYear = selectedOption.dataset.year;
+
+            if (studentYear) {
+                academicYear.value = studentYear;
+                semester.value = "";
+                semester.disabled = false;
+                updateSubjects();
+            } else {
+                academicYear.value = "";
+                semester.value = "";
+                semester.disabled = true;
+                updateSubjects();
+            }
+        });
+
+        document.getElementById("attendanceForm").addEventListener(
+            "submit",
+            async function(event) {
+                event.preventDefault();
+
+                const studentId = studentSelect.value;
+                const year = Number(academicYear.value);
+                const sem = Number(semester.value);
+                const subject = subjectSelect.value;
+                const attended = Number(attendedInput.value);
+                const total = Number(totalInput.value);
+
+                if (
+                    !studentId ||
+                    !year ||
+                    !sem ||
+                    !subject ||
+                    !Number.isInteger(attended) ||
+                    !Number.isInteger(total) ||
+                    attended < 0 ||
+                    total <= 0 ||
+                    attended > total
+                ) {
+                    message.textContent =
+                        "Please select all fields and enter valid attendance values.";
+                    return;
+                }
+
+                message.textContent = "Saving attendance...";
+
+                try {
+                    const response = await fetch(
+                        "http://localhost:3000/api/faculty/attendance",
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: "Bearer " + token
+                            },
+                            body: JSON.stringify({
+                                student_id: studentId,
+                                academic_year: year,
+                                semester: sem,
+                                subject: subject,
+                                classes_attended: attended,
+                                total_classes: total
+                            })
+                        }
+                    );
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            result.message ||
+                            "Unable to save attendance."
+                        );
+                    }
+
+                    message.textContent =
+                        result.message || "Attendance saved successfully!";
+
+                    attendedInput.value = "";
+                    totalInput.value = "";
+                    subjectSelect.value = "";
+                } catch (error) {
+                    message.textContent = error.message;
+                }
+            }
+        );
+
+        function logout() {
+            sessionStorage.removeItem("token");
+            sessionStorage.removeItem("user");
+            window.location.href = "login.html?role=Faculty";
+        }
+
+        if (token) {
+            loadStudents();
+        }
+    </script>
+</body>
+</html>

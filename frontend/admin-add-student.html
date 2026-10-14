@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Student - MLRIT Admin</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        #student_id {
+            background-color: #f2f2f2;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>MLRIT Admin Portal</h2>
+        <nav>
+            <a href="admin-dashboard.html">Dashboard</a>
+            <a href="login.html?role=Admin">Logout</a>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>Add New Student</h1>
+        <p>Enter the student's details below.</p>
+    </section>
+
+    <section id="features" style="display: flex; justify-content: center; align-items: center; padding: 30px 20px;">
+        <div class="card" style="width: 100%; max-width: 500px; box-sizing: border-box;">
+            <form id="addStudentForm">
+
+                <label for="username">Login Username</label>
+                <input type="text" id="username" required>
+
+                <label for="password">Login Password</label>
+                <input type="password" id="password" minlength="8" required>
+
+                <label for="year_of_study">Year of Study</label>
+                <select id="year_of_study" required>
+                    <option value="">Select Year</option>
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                </select>
+
+                <label for="student_id">Student ID</label>
+                <input
+                    type="text"
+                    id="student_id"
+                    placeholder="Select year to generate ID"
+                    readonly
+                    required
+                >
+
+                <label for="full_name">Full Name</label>
+                <input type="text" id="full_name" required>
+
+                <label for="email">Email</label>
+                <input type="email" id="email" required>
+
+                <label for="department">Department</label>
+                <input
+                    type="text"
+                    id="department"
+                    value="CSE"
+                    readonly
+                    required
+                >
+
+                <button type="submit">Add Student</button>
+
+                <p id="message"></p>
+
+            </form>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+
+    <script>
+        const addStudentForm = document.getElementById("addStudentForm");
+        const studentMessage = document.getElementById("message");
+        const studentIdField = document.getElementById("student_id");
+        const yearField = document.getElementById("year_of_study");
+
+        let previewRequest = 0;
+        let isSubmitting = false;
+
+        async function loadNextStudentId() {
+            const year = yearField.value;
+            const requestNumber = ++previewRequest;
+
+            studentIdField.value = "";
+            studentMessage.textContent = "";
+
+            if (!year) {
+                studentIdField.placeholder = "Select year to generate ID";
+                return;
+            }
+
+            const token = sessionStorage.getItem("token");
+
+            if (!token) {
+                studentMessage.textContent = "Please log in as Admin again.";
+                studentIdField.placeholder = "Login required";
+                return;
+            }
+
+            studentIdField.placeholder = "Generating ID...";
+
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/admin/students/next-id?year=" +
+                    encodeURIComponent(year),
+                    {
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                const result = await response.json();
+
+                if (requestNumber !== previewRequest) {
+                    return;
+                }
+
+                if (!response.ok) {
+                    studentIdField.placeholder = "Unable to generate ID";
+                    studentMessage.textContent =
+                        result.message || "Unable to generate Student ID.";
+                    return;
+                }
+
+                studentIdField.value = result.student_id || "";
+                studentIdField.placeholder = studentIdField.value
+                    ? ""
+                    : "Unable to generate ID";
+
+            } catch (error) {
+                if (requestNumber !== previewRequest) {
+                    return;
+                }
+
+                console.error("Student ID preview error:", error);
+                studentIdField.placeholder = "Unable to generate ID";
+                studentMessage.textContent =
+                    "Unable to connect to the server.";
+            }
+        }
+
+        yearField.addEventListener("change", loadNextStudentId);
+
+        addStudentForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            if (isSubmitting) {
+                return;
+            }
+
+            const token = sessionStorage.getItem("token");
+
+            if (!token) {
+                studentMessage.textContent = "Please log in as Admin again.";
+                return;
+            }
+
+            if (!yearField.value || !studentIdField.value) {
+                studentMessage.textContent =
+                    "Please select a year and wait for the Student ID to generate.";
+                return;
+            }
+
+            const student = {
+                username: document.getElementById("username").value.trim(),
+                password: document.getElementById("password").value,
+                full_name: document.getElementById("full_name").value.trim(),
+                email: document.getElementById("email").value.trim(),
+                department: "CSE",
+                year_of_study: Number(yearField.value)
+            };
+
+            try {
+                isSubmitting = true;
+                studentMessage.textContent = "Adding student...";
+
+                const response = await fetch(
+                    "http://localhost:3000/api/admin/students",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + token
+                        },
+                        body: JSON.stringify(student)
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    studentMessage.textContent =
+                        result.message || "Unable to add student.";
+                    return;
+                }
+
+                const generatedId = result.student_id || "";
+
+                addStudentForm.reset();
+                document.getElementById("department").value = "CSE";
+
+                // Show the ID of the student just added.
+                studentIdField.value = generatedId;
+                studentIdField.placeholder = "";
+
+                studentMessage.textContent =
+                    result.message +
+                    (generatedId
+                        ? " Generated Student ID: " + generatedId
+                        : "");
+
+            } catch (error) {
+                console.error("Add student error:", error);
+                studentMessage.textContent =
+                    "Unable to connect to the server. Please try again.";
+            } finally {
+                isSubmitting = false;
+            }
+        });
+    </script>
+
+    <script>
+        protectDashboard("Admin");
+    </script>
+
+</body>
+</html>

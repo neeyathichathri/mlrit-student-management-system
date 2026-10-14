@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Attendance - MLRIT</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .attendance-section {
+            padding: 20px;
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filters select {
+            padding: 10px;
+            min-width: 180px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        #attendanceTable th,
+        #attendanceTable td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        #attendanceTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #attendanceTable th {
+            background: #f2f2f2;
+        }
+
+        #message,
+        #overallAttendance {
+            margin: 15px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h2>MLRIT Student Portal</h2>
+        <nav>
+            <a href="student-dashboard.html">Dashboard</a>
+            <a href="#" onclick="logout(); return false;">Logout</a>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>My Attendance</h1>
+        <p>View your subject-wise attendance by academic year and semester.</p>
+    </section>
+
+    <section class="attendance-section">
+
+        <div class="filters">
+            <div>
+                <label for="academicYear">Academic Year</label><br>
+                <select id="academicYear">
+                    <option value="">All Years</option>
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="semester">Semester</label><br>
+                <select id="semester">
+                    <option value="">All Semesters</option>
+                    <option value="1">1st Semester</option>
+                    <option value="2">2nd Semester</option>
+                </select>
+            </div>
+        </div>
+
+        <p id="message">Loading attendance records...</p>
+
+        <div class="table-container">
+            <table id="attendanceTable">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Classes Attended</th>
+                        <th>Total Classes</th>
+                        <th>Attendance (%)</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceTableBody"></tbody>
+            </table>
+        </div>
+
+        <p id="overallAttendance"></p>
+
+        <button onclick="location.href='student-dashboard.html'">
+            Back to Dashboard
+        </button>
+
+    </section>
+
+    <script>
+        const token = sessionStorage.getItem("token");
+
+        const message = document.getElementById("message");
+        const tableBody = document.getElementById("attendanceTableBody");
+        const overallElement = document.getElementById("overallAttendance");
+
+        const yearSelect = document.getElementById("academicYear");
+        const semesterSelect = document.getElementById("semester");
+
+        let allAttendance = [];
+
+        async function loadAttendance() {
+            if (!token) {
+                window.location.href = "login.html?role=Student";
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/student/attendance",
+                    {
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.message || "Unable to load attendance records."
+                    );
+                }
+
+                if (!Array.isArray(data)) {
+                    throw new Error("Invalid attendance data received.");
+                }
+
+                allAttendance = data;
+                displayAttendance();
+
+            } catch (error) {
+                console.error("Attendance loading error:", error);
+                message.textContent = error.message ||
+                    "Unable to connect to the server.";
+            }
+        }
+
+        function displayAttendance() {
+            tableBody.replaceChildren();
+            overallElement.textContent = "";
+
+            const selectedYear = yearSelect.value;
+            const selectedSemester = semesterSelect.value;
+
+            const filteredAttendance = allAttendance.filter(item => {
+                const yearMatches =
+                    selectedYear === "" ||
+                    String(item.academic_year) === selectedYear;
+
+                const semesterMatches =
+                    selectedSemester === "" ||
+                    String(item.semester) === selectedSemester;
+
+                return yearMatches && semesterMatches;
+            });
+
+            if (filteredAttendance.length === 0) {
+                message.textContent =
+                    "No attendance available for the selected year and semester.";
+                return;
+            }
+
+            message.textContent = "";
+
+            let totalAttended = 0;
+            let totalClasses = 0;
+
+            filteredAttendance.forEach(item => {
+                const attended = Number(item.classes_attended);
+                const total = Number(item.total_classes);
+
+                const percentage = total > 0
+                    ? attended / total * 100
+                    : 0;
+
+                totalAttended += attended;
+                totalClasses += total;
+
+                const row = document.createElement("tr");
+
+                [
+                    item.subject,
+                    attended,
+                    total,
+                    percentage.toFixed(2) + "%"
+                ].forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent = value;
+                    row.appendChild(cell);
+                });
+
+                tableBody.appendChild(row);
+            });
+
+            const overall = totalClasses > 0
+                ? totalAttended / totalClasses * 100
+                : 0;
+
+            overallElement.textContent =
+                "Overall Attendance: " + overall.toFixed(2) + "% (" +
+                totalAttended + " out of " + totalClasses + " classes)";
+        }
+
+        yearSelect.addEventListener("change", displayAttendance);
+        semesterSelect.addEventListener("change", displayAttendance);
+
+        function logout() {
+            sessionStorage.removeItem("token");
+            sessionStorage.removeItem("user");
+            window.location.href = "login.html?role=Student";
+        }
+
+        loadAttendance();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,227 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLRIT Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        body {
+            background: #f4f7fc;
+        }
+
+        .dashboard {
+            max-width: 1150px;
+            margin: 35px auto;
+            padding: 0 20px;
+        }
+
+        .dashboard-heading {
+            margin-bottom: 25px;
+        }
+
+        .dashboard-heading h1 {
+            color: #172554;
+            margin-bottom: 8px;
+        }
+
+        .dashboard-heading p {
+            color: #64748b;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 22px;
+        }
+
+        .summary-card {
+            background: #fff;
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid #e8edf5;
+            box-shadow: 0 5px 20px rgba(30, 50, 90, 0.07);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 28px rgba(30, 50, 90, 0.12);
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 18px;
+        }
+
+        .students-icon {
+            background: #e8edff;
+        }
+
+        .faculty-icon {
+            background: #e1f7ed;
+        }
+
+        .records-icon {
+            background: #fff0dc;
+        }
+
+        .summary-card h3 {
+            color: #172554;
+            margin: 0 0 12px;
+        }
+
+        .description {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+
+        .summary-details {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 14px;
+            min-height: 76px;
+            margin-bottom: 20px;
+        }
+
+        .summary-details p {
+            color: #334155;
+            font-size: 14px;
+            margin: 7px 0;
+        }
+
+        .summary-details .muted {
+            color: #64748b;
+        }
+
+        .summary-card button {
+            width: 100%;
+            padding: 11px;
+            border: none;
+            border-radius: 9px;
+            background: #2457d6;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .summary-card button:hover {
+            background: #1946b5;
+        }
+
+        @media (max-width: 850px) {
+            .cards {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 560px) {
+            .dashboard {
+                margin: 25px auto;
+                padding: 0 14px;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .summary-card {
+                padding: 20px;
+            }
+
+            .dashboard-heading h1 {
+                font-size: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>MLRIT Admin Portal</h2>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="#" onclick="logout(); return false;">Logout</a>
+        </nav>
+    </header>
+
+    <main class="dashboard">
+        <div class="dashboard-heading">
+            <h1>Admin Dashboard</h1>
+            <p>Manage students, faculty, and academic records.</p>
+        </div>
+
+        <div class="cards">
+
+            <div class="summary-card">
+                <div class="card-icon students-icon">🎓</div>
+                <h3>Student Management</h3>
+                <p class="description">Manage registered student accounts.</p>
+
+                <div class="summary-details" id="studentsSummary">
+                    <p>View, add, update, and delete student records.</p>
+                    <p class="muted">Manage student information.</p>
+                </div>
+
+                <button onclick="location.href='admin-students.html'">
+                    Manage Students →
+                </button>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon faculty-icon">👨‍🏫</div>
+                <h3>Faculty Management</h3>
+                <p class="description">Manage faculty accounts and details.</p>
+
+                <div class="summary-details" id="facultySummary">
+                    <p>View, add, update, and delete faculty records.</p>
+                    <p class="muted">Manage faculty information.</p>
+                </div>
+
+                <button onclick="location.href='admin-faculty.html'">
+                    Manage Faculty →
+                </button>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon records-icon">📊</div>
+                <h3>Academic Records</h3>
+                <p class="description">View marks and attendance records.</p>
+
+                <div class="summary-details">
+                    <p>Choose an academic year and student.</p>
+                    <p class="muted">Review marks and attendance details.</p>
+                </div>
+
+                <button onclick="location.href='admin-academic-records.html'">
+                    View Records →
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+
+    <script>
+        protectDashboard("Admin");
+
+        function logout() {
+            sessionStorage.removeItem("token");
+            sessionStorage.removeItem("user");
+            window.location.href = "login.html?role=Admin";
+        }
+    </script>
+
+</body>
+</html>

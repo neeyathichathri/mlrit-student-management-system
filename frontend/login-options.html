@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Login - MLRIT</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .login-options {
+            max-width: 1000px;
+            margin: 60px auto;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .login-options h1 {
+            color: #203b70;
+            margin-bottom: 10px;
+        }
+
+        .login-options > p {
+            margin-bottom: 35px;
+        }
+
+        .login-cards {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 25px;
+        }
+
+        .login-card {
+            background: white;
+            padding: 30px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-top: 5px solid #203b70;
+        }
+
+        .login-card h2 {
+            color: #203b70;
+            margin-bottom: 12px;
+        }
+
+        .login-card p {
+            margin-bottom: 25px;
+            color: #555;
+        }
+
+        .login-card button {
+            background: #203b70;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 15px;
+        }
+
+        .login-card button:hover {
+            background: #162b52;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            color: #203b70;
+            text-decoration: none;
+        }
+
+        @media (max-width: 700px) {
+            .login-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .login-options {
+                margin: 25px auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h2>MLRIT Student Management System</h2>
+        <nav>
+            <a href="index.html">Home</a>
+        </nav>
+    </header>
+
+    <main class="login-options">
+        <h1>Choose Your Login</h1>
+        <p>Select your account type to continue to the login page.</p>
+
+        <div class="login-cards">
+            <div class="login-card">
+                <h2>Student</h2>
+                <p>View your profile, marks, and attendance.</p>
+                <button onclick="window.location.href='login.html?role=Student'">
+                    Student Login
+                </button>
+            </div>
+
+            <div class="login-card">
+                <h2>Faculty</h2>
+                <p>Manage student marks and attendance.</p>
+                <button onclick="window.location.href='login.html?role=Faculty'">
+                    Faculty Login
+                </button>
+            </div>
+
+            <div class="login-card">
+                <h2>Admin</h2>
+                <p>Manage student and faculty records.</p>
+                <button onclick="window.location.href='login.html?role=Admin'">
+                    Admin Login
+                </button>
+            </div>
+        </div>
+
+        <a href="index.html" class="back-link">← Back to Home</a>
+    </main>
+
+    <footer>
+        <p>Student Management System | College Project</p>
+    </footer>
+</body>
+</html>

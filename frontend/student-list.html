@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Details | MLRIT</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .student-list-container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .student-filter {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .student-filter label {
+            font-weight: bold;
+        }
+
+        .student-filter select {
+            padding: 10px;
+            min-width: 180px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 15px;
+        }
+
+        .student-table-wrapper {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        .student-list-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .student-list-table th,
+        .student-list-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .student-list-table th {
+            background: #2457a7;
+            color: white;
+        }
+
+        .back-button {
+            padding: 10px 16px;
+            background: #2457a7;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>MLRIT Student Management System</h1>
+        <p>Student Details</p>
+    </header>
+
+    <main class="student-list-container">
+
+        <button class="back-button" onclick="goBack()">
+            ← Back to Faculty Dashboard
+        </button>
+
+        <h2>Student Details</h2>
+
+        <div class="student-filter">
+            <label for="yearFilter">Select Academic Year:</label>
+
+            <select id="yearFilter">
+                <option value="">All Years</option>
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+            </select>
+        </div>
+
+        <p id="studentsMessage">Loading students...</p>
+
+        <div class="student-table-wrapper">
+            <table class="student-list-table">
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Full Name</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Year</th>
+                    </tr>
+                </thead>
+
+                <tbody id="studentsTableBody"></tbody>
+            </table>
+        </div>
+
+    </main>
+
+    <script>
+        let allStudents = [];
+
+        function goBack() {
+            window.location.href = "faculty-dashboard.html";
+        }
+
+        async function loadStudents() {
+            const token = sessionStorage.getItem("token");
+            const message = document.getElementById("studentsMessage");
+
+            if (!token) {
+                message.textContent = "Please log in again.";
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/faculty/students",
+                    {
+                        headers: {
+                            Authorization: "Bearer " + token
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    message.textContent =
+                        data.message || "Unable to load students.";
+                    return;
+                }
+
+                if (!Array.isArray(data)) {
+                    message.textContent = "Invalid student data received.";
+                    return;
+                }
+
+                allStudents = data;
+                displayStudents();
+
+            } catch (error) {
+                console.error("Error loading students:", error);
+                message.textContent =
+                    "Unable to connect to the backend.";
+            }
+        }
+
+        function displayStudents() {
+            const tableBody =
+                document.getElementById("studentsTableBody");
+
+            const message =
+                document.getElementById("studentsMessage");
+
+            const selectedYear =
+                document.getElementById("yearFilter").value;
+
+            tableBody.replaceChildren();
+
+            const filteredStudents = allStudents.filter(student => {
+                return selectedYear === "" ||
+                    String(student.year_of_study) === selectedYear;
+            });
+
+            if (filteredStudents.length === 0) {
+                message.textContent =
+                    "No students found for the selected year.";
+                return;
+            }
+
+            filteredStudents.forEach(student => {
+                const row = document.createElement("tr");
+
+                [
+                    student.student_id,
+                    student.full_name,
+                    student.email || "-",
+                    student.department || "-",
+                    student.year_of_study ?? "-"
+                ].forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent = value;
+                    row.appendChild(cell);
+                });
+
+                tableBody.appendChild(row);
+            });
+
+            message.textContent =
+                "Total students: " + filteredStudents.length;
+        }
+
+        document.getElementById("yearFilter").addEventListener(
+            "change",
+            displayStudents
+        );
+
+        loadStudents();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8s">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Records | MLRIT</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .records-container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .records-section {
+            background: white;
+            padding: 20px;
+            margin-top: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #203b70;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f3f6fb;
+        }
+
+        select, button {
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            background: #2457a7;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .student-selection {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .student-selection select {
+            min-width: 220px;
+            padding: 12px;
+        }
+
+        #message {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h2>MLRIT Admin Portal</h2>
+    <nav>
+        <a href="admin-dashboard.html">Dashboard</a>
+        <a href="#" onclick="logout(); return false;">Logout</a>
+    </nav>
+</header>
+
+<main class="records-container">
+    <h1>Academic Records</h1>
+    <p>View student marks and attendance records.</p>
+
+    <div class="student-selection">
+        <label for="yearSelect">Select Year:</label>
+        <select id="yearSelect">
+            <option value="">Select a year</option>
+            <option value="1">1st Year</option>
+            <option value="2">2nd Year</option>
+            <option value="3">3rd Year</option>
+            <option value="4">4th Year</option>
+        </select>
+
+        <label for="studentSelect">Select Student:</label>
+        <select id="studentSelect" disabled>
+            <option value="">Select a year first</option>
+        </select>
+
+        <button type="button" onclick="loadRecords()">View Records</button>
+    </div>
+
+    <p id="message" role="status"></p>
+
+    <section class="records-section">
+        <h2>Student Marks</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Marks Obtained</th>
+                        <th>Maximum Marks</th>
+                    </tr>
+                </thead>
+                <tbody id="marksBody">
+                    <tr><td colspan="3">Select a student to view marks.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="records-section">
+        <h2>Student Attendance</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Classes Attended</th>
+                        <th>Total Classes</th>
+                        <th>Attendance Percentage</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceBody">
+                    <tr><td colspan="4">Select a student to view attendance.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <button type="button" onclick="location.href='admin-dashboard.html'">
+        Back to Dashboard
+    </button>
+</main>
+
+<script>
+const token = sessionStorage.getItem("token");
+const yearSelect = document.getElementById("yearSelect");
+const studentSelect = document.getElementById("studentSelect");
+const message = document.getElementById("message");
+const marksBody = document.getElementById("marksBody");
+const attendanceBody = document.getElementById("attendanceBody");
+
+let allStudents = [];
+
+async function loadStudents() {
+    if (!token) {
+        window.location.href = "login.html?role=Admin";
+        return;
+    }
+
+    try {
+        const response = await fetch("http://localhost:3000/api/faculty/students", {
+            headers: {
+                Authorization: "Bearer " + token
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || "Unable to load students.");
+        }
+
+        allStudents = data;
+        message.textContent = "Students loaded successfully: " + allStudents.length;
+    } catch (error) {
+        message.textContent = error.message;
+    }
+}
+
+function resetRecords() {
+    showMessageRow(marksBody, 3, "Select a student to view marks.");
+    showMessageRow(attendanceBody, 4, "Select a student to view attendance.");
+}
+
+function updateStudentList() {
+    const selectedYear = yearSelect.value;
+
+    studentSelect.replaceChildren();
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+
+    if (!selectedYear) {
+        placeholder.textContent = "Select a year first";
+        studentSelect.disabled = true;
+        studentSelect.appendChild(placeholder);
+        message.textContent = "Please select a year first.";
+        resetRecords();
+        return;
+    }
+
+    const filteredStudents = allStudents.filter(
+        student => Number(student.year_of_study) === Number(selectedYear)
+    );
+
+    placeholder.textContent = "Select a student";
+    studentSelect.appendChild(placeholder);
+    studentSelect.disabled = false;
+
+    filteredStudents.forEach(student => {
+        const option = document.createElement("option");
+        option.value = student.student_id;
+        option.textContent = student.student_id + " - " + student.full_name;
+        studentSelect.appendChild(option);
+    });
+
+    message.textContent = filteredStudents.length
+        ? filteredStudents.length + " student(s) found in " +
+          yearSelect.options[yearSelect.selectedIndex].text + "."
+        : "No students found in the selected year.";
+
+    resetRecords();
+}
+
+function showMessageRow(tableBody, columns, text) {
+    tableBody.replaceChildren();
+
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+
+    cell.colSpan = columns;
+    cell.textContent = text;
+
+    row.appendChild(cell);
+    tableBody.appendChild(row);
+}
+
+async function loadRecords() {
+    const selectedYear = yearSelect.value;
+    const studentId = studentSelect.value;
+
+    if (!selectedYear) {
+        message.textContent = "Please select a year first.";
+        return;
+    }
+
+    if (!studentId) {
+        message.textContent = "Please select a student.";
+        return;
+    }
+
+    message.textContent = "Loading academic records...";
+
+    showMessageRow(marksBody, 3, "Loading marks...");
+    showMessageRow(attendanceBody, 4, "Loading attendance...");
+
+    try {
+        const [marksResponse, attendanceResponse] = await Promise.all([
+            fetch("http://localhost:3000/api/admin/records/marks/" + encodeURIComponent(studentId), {
+                headers: { Authorization: "Bearer " + token }
+            }),
+            fetch("http://localhost:3000/api/admin/records/attendance/" + encodeURIComponent(studentId), {
+                headers: { Authorization: "Bearer " + token }
+            })
+        ]);
+
+        const marks = await marksResponse.json();
+        const attendance = await attendanceResponse.json();
+
+        if (!marksResponse.ok) {
+            throw new Error(marks.message || "Unable to load marks.");
+        }
+
+        if (!attendanceResponse.ok) {
+            throw new Error(attendance.message || "Unable to load attendance.");
+        }
+
+        if (marks.length === 0) {
+            showMessageRow(marksBody, 3, "No marks records found.");
+        } else {
+            marksBody.replaceChildren();
+
+            marks.forEach(item => {
+                const row = document.createElement("tr");
+
+                [item.subject, item.marks_obtained, item.max_marks].forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent = value ?? "-";
+                    row.appendChild(cell);
+                });
+
+                marksBody.appendChild(row);
+            });
+        }
+
+        if (attendance.length === 0) {
+            showMessageRow(attendanceBody, 4, "No attendance records found.");
+        } else {
+            attendanceBody.replaceChildren();
+
+            attendance.forEach(item => {
+                const row = document.createElement("tr");
+
+                [
+                    item.subject,
+                    item.classes_attended,
+                    item.total_classes,
+                    item.percentage + "%"
+                ].forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent = value ?? "-";
+                    row.appendChild(cell);
+                });
+
+                attendanceBody.appendChild(row);
+            });
+        }
+
+        message.textContent = "Academic records loaded successfully.";
+    } catch (error) {
+        message.textContent = error.message;
+        showMessageRow(marksBody, 3, "Unable to load marks.");
+        showMessageRow(attendanceBody, 4, "Unable to load attendance.");
+    }
+}
+
+function logout() {
+    sessionStorage.clear();
+    window.location.href = "login.html?role=Admin";
+}
+
+yearSelect.addEventListener("change", updateStudentList);
+
+loadStudents();
+</script>
+
+</body>
+</html>

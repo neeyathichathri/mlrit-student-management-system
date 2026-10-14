@@ -1,0 +1,271 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLRIT Faculty Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        body {
+            background: #f4f7fc;
+        }
+
+        .dashboard {
+            max-width: 1150px;
+            margin: 35px auto;
+            padding: 0 20px;
+        }
+
+        .dashboard-heading {
+            margin-bottom: 25px;
+        }
+
+        .dashboard-heading h1 {
+            color: #172554;
+            margin-bottom: 8px;
+        }
+
+        .dashboard-heading p {
+            color: #64748b;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 22px;
+        }
+
+        .summary-card {
+            background: #fff;
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid #e8edf5;
+            box-shadow: 0 5px 20px rgba(30, 50, 90, 0.07);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 28px rgba(30, 50, 90, 0.12);
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 18px;
+        }
+
+        .students-icon {
+            background: #e8edff;
+        }
+
+        .marks-icon {
+            background: #e1f7ed;
+        }
+
+        .attendance-icon {
+            background: #fff0dc;
+        }
+
+        .summary-card h3 {
+            color: #172554;
+            margin: 0 0 12px;
+        }
+
+        .description {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+
+        .summary-details {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 14px;
+            min-height: 76px;
+            margin-bottom: 20px;
+        }
+
+        .summary-details p {
+            color: #334155;
+            font-size: 14px;
+            margin: 7px 0;
+        }
+
+        .summary-details .muted {
+            color: #64748b;
+        }
+
+        .summary-card button {
+            width: 100%;
+            padding: 11px;
+            border: none;
+            border-radius: 9px;
+            background: #2457d6;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .summary-card button:hover {
+            background: #1946b5;
+        }
+
+        @media (max-width: 850px) {
+            .cards {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 560px) {
+            .dashboard {
+                margin: 25px auto;
+                padding: 0 14px;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .summary-card {
+                padding: 20px;
+            }
+
+            .dashboard-heading h1 {
+                font-size: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>MLRIT Faculty Portal</h2>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="#" onclick="logout(); return false;">Logout</a>
+        </nav>
+    </header>
+
+    <main class="dashboard">
+        <div class="dashboard-heading">
+            <h1 id="welcomeMessage">Welcome, Faculty!</h1>
+            <p>Manage students and their academic information in one place.</p>
+        </div>
+
+        <div class="cards">
+
+            <div class="summary-card">
+                <div class="card-icon students-icon">👥</div>
+                <h3>View Students</h3>
+                <p class="description">Access student details and filter by year.</p>
+
+                <div class="summary-details" id="studentsSummary">
+                    <p class="muted">Loading student information...</p>
+                </div>
+
+                <button onclick="location.href='student-list.html'">
+                    View Students →
+                </button>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon marks-icon">📚</div>
+                <h3>Manage Marks</h3>
+                <p class="description">Enter and update subject-wise marks.</p>
+
+                <div class="summary-details">
+                    <p>Record student marks by academic year and semester.</p>
+                    <p class="muted">Keep academic records up to date.</p>
+                </div>
+
+                <button onclick="location.href='faculty-marks.html'">
+                    Manage Marks →
+                </button>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon attendance-icon">📅</div>
+                <h3>Manage Attendance</h3>
+                <p class="description">Record student attendance.</p>
+
+                <div class="summary-details">
+                    <p>Update classes attended and total classes.</p>
+                    <p class="muted">Maintain accurate attendance records.</p>
+                </div>
+
+                <button onclick="location.href='faculty-attendance.html'">
+                    Manage Attendance →
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+
+    <script>
+        protectDashboard("Faculty");
+
+        const token = sessionStorage.getItem("token");
+
+        async function loadFacultyDashboard() {
+            if (!token) {
+                window.location.href = "login.html?role=Faculty";
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/faculty/students",
+                    {
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error("Unable to load students");
+                }
+
+                const students = await response.json();
+                const box = document.getElementById("studentsSummary");
+
+                box.replaceChildren();
+
+                const count = document.createElement("p");
+                count.textContent = "Registered Students: " + students.length;
+                box.appendChild(count);
+
+                const note = document.createElement("p");
+                note.className = "muted";
+                note.textContent = "View student details and academic years.";
+                box.appendChild(note);
+
+            } catch (error) {
+                document.getElementById("studentsSummary").textContent =
+                    "Unable to load student information.";
+                console.error(error);
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem("token");
+            sessionStorage.removeItem("user");
+            window.location.href = "login.html?role=Faculty";
+        }
+
+        loadFacultyDashboard();
+    </script>
+
+</body>
+</html>

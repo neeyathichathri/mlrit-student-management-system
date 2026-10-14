@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Marks - MLRIT</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .marks-section {
+            padding: 20px;
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filters select {
+            padding: 10px;
+            min-width: 180px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        #marksTable th,
+        #marksTable td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        #marksTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #marksTable th {
+            background: #f2f2f2;
+        }
+
+        #message,
+        #total {
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>MLRIT Student Portal</h2>
+        <nav>
+            <a href="student-dashboard.html">Dashboard</a>
+            <a href="#" onclick="logout(); return false;">Logout</a>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>My Academic Marks</h1>
+        <p>View your subject-wise marks by academic year and semester.</p>
+    </section>
+
+    <section class="marks-section">
+
+        <div class="filters">
+            <div>
+                <label for="academicYear">Academic Year</label><br>
+                <select id="academicYear">
+                    <option value="">All Years</option>
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="semester">Semester</label><br>
+                <select id="semester">
+                    <option value="">All Semesters</option>
+                    <option value="1">1st Semester</option>
+                    <option value="2">2nd Semester</option>
+                </select>
+            </div>
+        </div>
+
+        <p id="message">Loading your marks...</p>
+
+        <div class="table-container">
+            <table id="marksTable">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Marks Obtained</th>
+                        <th>Maximum Marks</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody id="marksTableBody"></tbody>
+            </table>
+        </div>
+
+        <p id="total"></p>
+
+        <button onclick="location.href='student-dashboard.html'">
+            Back to Dashboard
+        </button>
+
+    </section>
+
+    <script>
+        const token = sessionStorage.getItem("token");
+        const message = document.getElementById("message");
+        const tableBody = document.getElementById("marksTableBody");
+        const totalElement = document.getElementById("total");
+        const yearSelect = document.getElementById("academicYear");
+        const semesterSelect = document.getElementById("semester");
+
+        let allMarks = [];
+
+        if (!token) {
+            window.location.href = "login.html?role=Student";
+        }
+
+        async function loadMarks() {
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/student/marks",
+                    {
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.message || "Unable to load marks."
+                    );
+                }
+
+                allMarks = Array.isArray(data) ? data : data.marks;
+
+                if (!Array.isArray(allMarks)) {
+                    throw new Error("Invalid marks data received.");
+                }
+
+                displayMarks();
+
+            } catch (error) {
+                console.error("Error loading marks:", error);
+                message.textContent = error.message;
+            }
+        }
+
+        function displayMarks() {
+            tableBody.replaceChildren();
+            totalElement.textContent = "";
+
+            const selectedYear = yearSelect.value;
+            const selectedSemester = semesterSelect.value;
+
+            const filteredMarks = allMarks.filter(mark => {
+                const yearMatches =
+                    selectedYear === "" ||
+                    String(mark.academic_year) === selectedYear;
+
+                const semesterMatches =
+                    selectedSemester === "" ||
+                    String(mark.semester) === selectedSemester;
+
+                return yearMatches && semesterMatches;
+            });
+
+            if (filteredMarks.length === 0) {
+                message.textContent =
+                    "No marks available for the selected year and semester.";
+                return;
+            }
+
+            message.textContent = "";
+
+            let obtained = 0;
+            let maximum = 0;
+
+            filteredMarks.forEach(mark => {
+                const score = Number(mark.marks_obtained);
+                const max = Number(mark.max_marks);
+
+                obtained += score;
+                maximum += max;
+
+                const row = document.createElement("tr");
+
+                [
+                    mark.subject,
+                    score,
+                    max,
+                    max > 0
+                        ? (score / max * 100).toFixed(2) + "%"
+                        : "N/A"
+                ].forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent = value;
+                    row.appendChild(cell);
+                });
+
+                tableBody.appendChild(row);
+            });
+
+            totalElement.textContent =
+                "Total: " + obtained + " / " + maximum +
+                (maximum > 0
+                    ? " (" + (obtained / maximum * 100).toFixed(2) + "%)"
+                    : "");
+        }
+
+        yearSelect.addEventListener("change", displayMarks);
+        semesterSelect.addEventListener("change", displayMarks);
+
+        function logout() {
+            sessionStorage.removeItem("token");
+            sessionStorage.removeItem("user");
+            window.location.href = "login.html?role=Student";
+        }
+
+        if (token) {
+            loadMarks();
+        }
+    </script>
+
+</body>
+</html>

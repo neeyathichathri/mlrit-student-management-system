@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Faculty Management</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .faculty-container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        .faculty-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin-top: 20px;
+        }
+
+        .faculty-table th,
+        .faculty-table td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .faculty-table th {
+            background: #203b70;
+            color: white;
+        }
+
+        .faculty-table tr:nth-child(even) {
+            background: #f3f6fb;
+        }
+
+        #message {
+            margin: 20px 0;
+        }
+
+        .faculty-form {
+            display: none;
+            max-width: 500px;
+            margin: 25px auto;
+            padding: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+        }
+
+        .faculty-form label {
+            display: block;
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+        .faculty-form input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .faculty-form button {
+            margin-top: 15px;
+            padding: 10px 16px;
+            cursor: pointer;
+        }
+
+        .action-button {
+            padding: 7px 12px;
+            margin: 3px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            color: white;
+        }
+
+        .edit-button {
+            background: #203b70;
+        }
+
+        .delete-button {
+            background: #d93025;
+        }
+
+        .add-button {
+            background: #198754;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h2>MLRIT Admin Portal</h2>
+        <nav>
+            <a href="admin-dashboard.html">Dashboard</a>
+            <a href="#" onclick="logout(); return false;">Logout</a>
+        </nav>
+    </header>
+
+    <main class="faculty-container">
+        <h1>Faculty Management</h1>
+        <p>View, add, edit, and delete faculty records.</p>
+
+        <button type="button" class="add-button" onclick="showAddForm()">
+            + Add Faculty
+        </button>
+
+        <p id="message">Loading faculty records...</p>
+
+        <div class="table-wrapper">
+            <table class="faculty-table">
+                <thead>
+                    <tr>
+                        <th>Faculty ID</th>
+                        <th>Full Name</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="facultyTableBody"></tbody>
+            </table>
+        </div>
+
+        <form id="facultyForm" class="faculty-form">
+            <h2 id="formTitle">Add Faculty</h2>
+
+            <div id="accountFields">
+                <label for="username">Username</label>
+                <input type="text" id="username" autocomplete="off">
+
+                <label for="password">Password</label>
+                <input type="password" id="password"
+                    autocomplete="new-password">
+            </div>
+
+            <label for="facultyId">Faculty ID</label>
+            <input type="text" id="facultyId" required>
+
+            <label for="fullName">Full Name</label>
+            <input type="text" id="fullName" required>
+
+            <label for="email">Email</label>
+            <input type="email" id="email" required>
+
+            <label for="department">Department</label>
+            <input type="text" id="department" required>
+
+            <button type="submit" id="saveButton">Add Faculty</button>
+            <button type="button" onclick="cancelForm()">Cancel</button>
+        </form>
+
+        <button onclick="location.href='admin-dashboard.html'">
+            Back to Dashboard
+        </button>
+    </main>
+
+    <script>
+        let editingFacultyId = null;
+
+        async function loadFaculty() {
+            const token = sessionStorage.getItem("token");
+            const message = document.getElementById("message");
+            const tableBody = document.getElementById("facultyTableBody");
+
+            if (!token) {
+                window.location.href = "login.html?role=Admin";
+                return;
+            }
+
+            message.textContent = "Loading faculty records...";
+            tableBody.innerHTML = "";
+
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/admin/faculty",
+                    {
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.message || "Unable to load faculty records."
+                    );
+                }
+
+                if (!Array.isArray(data)) {
+                    throw new Error("Invalid faculty data received.");
+                }
+
+                if (data.length === 0) {
+                    message.textContent = "No faculty records found.";
+                    return;
+                }
+
+                data.forEach(faculty => {
+                    const row = document.createElement("tr");
+
+                    [
+                        faculty.faculty_id,
+                        faculty.full_name,
+                        faculty.email,
+                        faculty.department
+                    ].forEach(value => {
+                        const cell = document.createElement("td");
+                        cell.textContent = value ?? "-";
+                        row.appendChild(cell);
+                    });
+
+                    const actionCell = document.createElement("td");
+
+                    const editButton = document.createElement("button");
+                    editButton.type = "button";
+                    editButton.textContent = "Edit";
+                    editButton.className = "action-button edit-button";
+                    editButton.addEventListener("click", () => {
+                        editFaculty(faculty);
+                    });
+
+                    const deleteButton = document.createElement("button");
+                    deleteButton.type = "button";
+                    deleteButton.textContent = "Delete";
+                    deleteButton.className = "action-button delete-button";
+                    deleteButton.addEventListener("click", () => {
+                        deleteFaculty(faculty, deleteButton);
+                    });
+
+                    actionCell.appendChild(editButton);
+                    actionCell.appendChild(deleteButton);
+                    row.appendChild(actionCell);
+                    tableBody.appendChild(row);
+                });
+
+                message.textContent =
+                    "Faculty records loaded successfully: " + data.length;
+
+            } catch (error) {
+                console.error("Load faculty error:", error);
+                message.textContent = error.message;
+            }
+        }
+
+        function showAddForm() {
+            editingFacultyId = null;
+
+            const form = document.getElementById("facultyForm");
+            form.reset();
+            form.style.display = "block";
+
+            document.getElementById("formTitle").textContent = "Add Faculty";
+            document.getElementById("saveButton").textContent = "Add Faculty";
+            document.getElementById("accountFields").style.display = "block";
+
+            document.getElementById("username").required = true;
+            document.getElementById("password").required = true;
+            document.getElementById("password").minLength = 8;
+            document.getElementById("facultyId").readOnly = false;
+
+            form.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
+        }
+
+        function editFaculty(faculty) {
+            editingFacultyId = faculty.faculty_id;
+
+            const form = document.getElementById("facultyForm");
+            form.reset();
+            form.style.display = "block";
+
+            document.getElementById("formTitle").textContent = "Edit Faculty";
+            document.getElementById("saveButton").textContent = "Save Changes";
+            document.getElementById("accountFields").style.display = "none";
+
+            document.getElementById("username").required = false;
+            document.getElementById("password").required = false;
+            document.getElementById("facultyId").readOnly = false;
+
+            document.getElementById("facultyId").value =
+                faculty.faculty_id || "";
+
+            document.getElementById("fullName").value =
+                faculty.full_name || "";
+
+            document.getElementById("email").value =
+                faculty.email || "";
+
+            document.getElementById("department").value =
+                faculty.department || "";
+
+            form.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
+        }
+
+        function cancelForm() {
+            document.getElementById("facultyForm").reset();
+            document.getElementById("facultyForm").style.display = "none";
+            editingFacultyId = null;
+        }
+
+        document.getElementById("facultyForm").addEventListener(
+            "submit",
+            async function(event) {
+                event.preventDefault();
+
+                const token = sessionStorage.getItem("token");
+                const message = document.getElementById("message");
+                const saveButton = document.getElementById("saveButton");
+
+                if (!token) {
+                    message.textContent = "Please log in as Admin again.";
+                    return;
+                }
+
+                const facultyId =
+                    document.getElementById("facultyId").value.trim();
+
+                const fullName =
+                    document.getElementById("fullName").value.trim();
+
+                const email =
+                    document.getElementById("email").value.trim();
+
+                const department =
+                    document.getElementById("department").value.trim();
+
+                if (!facultyId || !fullName || !email || !department) {
+                    message.textContent = "Please fill in all faculty details.";
+                    return;
+                }
+
+                let url;
+                let method;
+                let body;
+
+                if (editingFacultyId !== null) {
+                    url = "http://localhost:3000/api/admin/faculty/" +
+                        encodeURIComponent(editingFacultyId);
+
+                    method = "PUT";
+
+                    body = {
+                        new_faculty_id: facultyId,
+                        full_name: fullName,
+                        email: email,
+                        department: department
+                    };
+                } else {
+                    const username =
+                        document.getElementById("username").value.trim();
+
+                    const password =
+                        document.getElementById("password").value;
+
+                    if (!username || !password) {
+                        message.textContent =
+                            "Please enter a username and password.";
+                        return;
+                    }
+
+                    if (password.length < 8) {
+                        message.textContent =
+                            "Password must contain at least 8 characters.";
+                        return;
+                    }
+
+                    url = "http://localhost:3000/api/admin/faculty";
+                    method = "POST";
+
+                    body = {
+                        username: username,
+                        password: password,
+                        faculty_id: facultyId,
+                        full_name: fullName,
+                        email: email,
+                        department: department
+                    };
+                }
+
+                saveButton.disabled = true;
+                message.textContent = editingFacultyId !== null
+                    ? "Updating faculty..."
+                    : "Adding faculty...";
+
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + token
+                        },
+                        body: JSON.stringify(body)
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            result.message || "Unable to save faculty details."
+                        );
+                    }
+
+                    const successMessage = result.message ||
+                        (method === "POST"
+                            ? "Faculty added successfully!"
+                            : "Faculty updated successfully!");
+
+                    cancelForm();
+                    await loadFaculty();
+                    message.textContent = successMessage;
+
+                } catch (error) {
+                    console.error("Save faculty error:", error);
+                    message.textContent = error.message ||
+                        "Unable to connect to the server.";
+                } finally {
+                    saveButton.disabled = false;
+                }
+            }
+        );
+
+        async function deleteFaculty(faculty, button) {
+            const confirmed = confirm(
+                "Are you sure you want to delete " +
+                faculty.full_name + " (" + faculty.faculty_id + ")?\n\n" +
+                "This will also delete the faculty login account. " +
+                "This action cannot be undone."
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            const token = sessionStorage.getItem("token");
+            const message = document.getElementById("message");
+
+            if (!token) {
+                message.textContent = "Please log in as Admin again.";
+                return;
+            }
+
+            button.disabled = true;
+            message.textContent = "Deleting faculty...";
+
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/admin/faculty/" +
+                    encodeURIComponent(faculty.faculty_id),
+                    {
+                        method: "DELETE",
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        result.message || "Unable to delete faculty."
+                    );
+                }
+
+                if (editingFacultyId === faculty.faculty_id) {
+                    cancelForm();
+                }
+
+                await loadFaculty();
+
+                message.textContent =
+                    result.message || "Faculty deleted successfully!";
+
+            } catch (error) {
+                console.error("Delete faculty error:", error);
+                message.textContent = error.message ||
+                    "Unable to connect to the server.";
+                button.disabled = false;
+            }
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = "login.html?role=Admin";
+        }
+
+        loadFaculty();
+    </script>
+</body>
+</html>

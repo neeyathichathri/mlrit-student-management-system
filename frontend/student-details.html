@@ -1,0 +1,501 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Details - MLRIT</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .details-container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .details-card {
+            background: white;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        .details-card h2 {
+            color: #173b70;
+            margin-bottom: 20px;
+        }
+
+        .profile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+        }
+
+        .profile-item {
+            padding: 12px;
+            background: #f3f6fb;
+            border-radius: 8px;
+            overflow-wrap: anywhere;
+        }
+
+        .profile-item strong {
+            display: block;
+            margin-bottom: 7px;
+            color: #555;
+        }
+
+        .profile-item span {
+            color: #173b70;
+        }
+
+        .details-card table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .details-card th,
+        .details-card td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .details-card th {
+            background: #173b70;
+            color: white;
+        }
+
+        .details-card tr:nth-child(even) {
+            background: #f3f6fb;
+        }
+
+        .status-message {
+            margin-bottom: 15px;
+            color: #444;
+        }
+
+        .details-navigation {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .details-navigation button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            background: #173b70;
+            color: white;
+            cursor: pointer;
+        }
+
+        .details-navigation button:hover,
+        .details-navigation button.active {
+            background: #2865ad;
+        }
+
+        .detail-section {
+            display: none;
+        }
+
+        .detail-section.active {
+            display: block;
+        }
+
+        .back-button {
+            display: inline-block;
+            background: #173b70;
+            color: white;
+            padding: 10px 18px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .details-container {
+                padding: 12px;
+            }
+
+            .details-card {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>MLRIT Student Details</h1>
+        <a href="student-dashboard.html">Dashboard</a>
+        <button onclick="logout()">Logout</button>
+    </header>
+
+    <main class="details-container">
+
+        <h2>My Academic Details</h2>
+        <p>Choose a section to view your academic information.</p>
+
+        <div class="details-navigation">
+            <button id="profileButton" onclick="showSection('profileSection')">
+                View Profile
+            </button>
+
+            <button id="marksButton" onclick="showSection('marksSection')">
+                View Marks
+            </button>
+
+            <button id="attendanceButton" onclick="showSection('attendanceSection')">
+                View Attendance
+            </button>
+        </div>
+
+        <section class="details-card detail-section" id="profileSection">
+            <h2>My Profile</h2>
+            <p id="profileMessage" class="status-message">Loading profile...</p>
+
+            <div class="profile-grid">
+                <div class="profile-item">
+                    <strong>Student ID</strong>
+                    <span id="studentId">-</span>
+                </div>
+
+                <div class="profile-item">
+                    <strong>Full Name</strong>
+                    <span id="fullName">-</span>
+                </div>
+
+                <div class="profile-item">
+                    <strong>Email</strong>
+                    <span id="email">-</span>
+                </div>
+
+                <div class="profile-item">
+                    <strong>Department</strong>
+                    <span id="department">-</span>
+                </div>
+
+                <div class="profile-item">
+                    <strong>Year of Study</strong>
+                    <span id="yearOfStudy">-</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="details-card detail-section" id="marksSection">
+            <h2>My Marks</h2>
+            <p id="marksMessage" class="status-message">Loading marks...</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Marks Obtained</th>
+                        <th>Maximum Marks</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody id="marksTableBody"></tbody>
+            </table>
+        </section>
+
+        <section class="details-card detail-section" id="attendanceSection">
+            <h2>My Attendance</h2>
+            <p id="attendanceMessage" class="status-message">
+                Loading attendance...
+            </p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Classes Attended</th>
+                        <th>Total Classes</th>
+                        <th>Attendance Percentage</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceTableBody"></tbody>
+            </table>
+        </section>
+
+        <a href="student-dashboard.html" class="back-button">
+            Back to Dashboard
+        </a>
+
+    </main>
+
+    <script src="script.js"></script>
+
+    <script>
+        function showSection(sectionId) {
+            document.querySelectorAll(".detail-section").forEach(function(section) {
+                section.classList.remove("active");
+            });
+
+            document.querySelectorAll(".details-navigation button").forEach(function(button) {
+                button.classList.remove("active");
+            });
+
+            const selectedSection = document.getElementById(sectionId);
+
+            if (!selectedSection) {
+                return;
+            }
+
+            selectedSection.classList.add("active");
+
+            const buttonIds = {
+                profileSection: "profileButton",
+                marksSection: "marksButton",
+                attendanceSection: "attendanceButton"
+            };
+
+            document.getElementById(buttonIds[sectionId]).classList.add("active");
+        }
+
+        async function loadDetails() {
+            const token = sessionStorage.getItem("token");
+            const savedUser = sessionStorage.getItem("user");
+
+            if (!token || !savedUser) {
+                window.location.href = "login.html?role=Student";
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/profile",
+                    {
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    sessionStorage.removeItem("token");
+                    sessionStorage.removeItem("user");
+                    window.location.href = "login.html?role=Student";
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.user.role !== "Student") {
+                    alert("Access denied!");
+                    window.location.href = "index.html";
+                    return;
+                }
+
+                await Promise.all([
+                    loadProfile(token),
+                    loadMarks(token),
+                    loadAttendance(token)
+                ]);
+
+            } catch (error) {
+                document.getElementById("profileMessage").textContent =
+                    "Cannot connect to the backend server.";
+
+                document.getElementById("marksMessage").textContent =
+                    "Cannot connect to the backend server.";
+
+                document.getElementById("attendanceMessage").textContent =
+                    "Cannot connect to the backend server.";
+            }
+        }
+
+        async function loadProfile(token) {
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/student/profile",
+                    {
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                const message = document.getElementById("profileMessage");
+
+                if (!response.ok) {
+                    message.textContent = "Unable to load profile details.";
+                    return;
+                }
+
+                const data = await response.json();
+
+                document.getElementById("studentId").textContent =
+                    data.student_id || "-";
+
+                document.getElementById("fullName").textContent =
+                    data.full_name || "-";
+
+                document.getElementById("email").textContent =
+                    data.email || "-";
+
+                document.getElementById("department").textContent =
+                    data.department || "-";
+
+                document.getElementById("yearOfStudy").textContent =
+                    data.year_of_study || "-";
+
+                message.textContent = "Profile loaded successfully.";
+
+            } catch (error) {
+                document.getElementById("profileMessage").textContent =
+                    "Unable to load profile details.";
+            }
+        }
+
+        async function loadMarks(token) {
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/student/marks",
+                    {
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                const message = document.getElementById("marksMessage");
+                const tableBody = document.getElementById("marksTableBody");
+
+                if (!response.ok) {
+                    message.textContent = "Unable to load marks.";
+                    return;
+                }
+
+                const marks = await response.json();
+
+                if (marks.length === 0) {
+                    message.textContent = "No marks have been added yet.";
+                    return;
+                }
+
+                tableBody.replaceChildren();
+
+                marks.forEach(function(mark) {
+                    const row = document.createElement("tr");
+
+                    const percentage = Number(mark.max_marks) > 0
+                        ? (Number(mark.marks_obtained) /
+                           Number(mark.max_marks) * 100).toFixed(2) + "%"
+                        : "N/A";
+
+                    [
+                        mark.subject,
+                        mark.marks_obtained,
+                        mark.max_marks,
+                        percentage
+                    ].forEach(function(value) {
+                        const cell = document.createElement("td");
+                        cell.textContent = value;
+                        row.appendChild(cell);
+                    });
+
+                    tableBody.appendChild(row);
+                });
+
+                message.textContent = "Marks loaded successfully.";
+
+            } catch (error) {
+                document.getElementById("marksMessage").textContent =
+                    "Unable to load marks.";
+            }
+        }
+
+        async function loadAttendance(token) {
+            const message = document.getElementById("attendanceMessage");
+            const tableBody = document.getElementById("attendanceTableBody");
+
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/student/attendance",
+                    {
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    message.textContent =
+                        "Attendance request failed (" + response.status + "): " + errorText;
+                    return;
+                }
+
+
+                const attendance = await response.json();
+
+                if (attendance.length === 0) {
+                    message.textContent =
+                        "No attendance records have been added yet.";
+                    return;
+                }
+
+                tableBody.replaceChildren();
+
+                attendance.forEach(function(item) {
+                    const row = document.createElement("tr");
+
+                    const percentage = Number(item.total_classes) > 0
+                        ? (Number(item.classes_attended) /
+                           Number(item.total_classes) * 100).toFixed(2) + "%"
+                        : "0%";
+
+                    [
+                        item.subject,
+                        item.classes_attended,
+                        item.total_classes,
+                        percentage
+                    ].forEach(function(value) {
+                        const cell = document.createElement("td");
+                        cell.textContent = value;
+                        row.appendChild(cell);
+                    });
+
+                    tableBody.appendChild(row);
+                });
+
+                message.textContent = "Attendance loaded successfully.";
+
+            } catch (error) {
+                message.textContent = "Unable to load attendance.";
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem("token");
+            sessionStorage.removeItem("user");
+            window.location.href = "login.html?role=Student";
+        }
+
+        const requestedSection = new URLSearchParams(
+            window.location.search
+        ).get("section");
+
+        const validSections = [
+            "profileSection",
+            "marksSection",
+            "attendanceSection"
+        ];
+
+        showSection(
+            validSections.includes(requestedSection)
+                ? requestedSection
+                : "profileSection"
+        );
+
+        loadDetails();
+    </script>
+
+</body>
+</html>

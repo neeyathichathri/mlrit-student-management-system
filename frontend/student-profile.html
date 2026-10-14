@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Profile</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f6fb;
+            margin: 0;
+            padding: 30px;
+            color: #203b70;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+        }
+
+        h1 {
+            color: #172f5c;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px #00000015;
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .item {
+            background: #f3f6fb;
+            padding: 18px;
+            border-radius: 10px;
+        }
+
+        .item strong {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        button {
+            background: #203b70;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 10px 0 0;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #315da5;
+        }
+
+        #message {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>My Student Profile</h1>
+        <p>View your personal and academic details.</p>
+
+        <div class="card">
+            <p id="message">Loading profile...</p>
+
+            <div class="details">
+                <div class="item">
+                    <strong>Student ID</strong>
+                    <span id="studentId">-</span>
+                </div>
+
+                <div class="item">
+                    <strong>Full Name</strong>
+                    <span id="fullName">-</span>
+                </div>
+
+                <div class="item">
+                    <strong>Email</strong>
+                    <span id="email">-</span>
+                </div>
+
+                <div class="item">
+                    <strong>Department</strong>
+                    <span id="department">-</span>
+                </div>
+
+                <div class="item">
+                    <strong>Year of Study</strong>
+                    <span id="year">-</span>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="location.href='student-dashboard.html'">
+            Back to Dashboard
+        </button>
+
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        async function loadProfile() {
+            const token = sessionStorage.getItem("token");
+
+            if (!token) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/student/profile",
+                    {
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Unable to load profile.");
+                }
+
+                document.getElementById("studentId").textContent =
+                    data.student_id || "-";
+
+                document.getElementById("fullName").textContent =
+                    data.full_name || "-";
+
+                document.getElementById("email").textContent =
+                    data.email || "-";
+
+                document.getElementById("department").textContent =
+                    data.department || "-";
+
+                document.getElementById("year").textContent =
+                    data.year_of_study || "-";
+
+                document.getElementById("message").textContent =
+                    "Profile loaded successfully.";
+            } catch (error) {
+                document.getElementById("message").textContent =
+                    error.message;
+            }
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = "login.html";
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>

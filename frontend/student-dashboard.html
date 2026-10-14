@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLRIT Student Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        body {
+            background: #f4f7fc;
+        }
+
+        .dashboard {
+            max-width: 1150px;
+            margin: 35px auto;
+            padding: 0 20px;
+        }
+
+        .dashboard-heading {
+            margin-bottom: 25px;
+        }
+
+        .dashboard-heading h1 {
+            color: #172554;
+            margin-bottom: 8px;
+        }
+
+        .dashboard-heading p {
+            color: #64748b;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 22px;
+        }
+
+        .summary-card {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(30, 50, 90, 0.07);
+            border: 1px solid #e8edf5;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 28px rgba(30, 50, 90, 0.12);
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 18px;
+        }
+
+        .profile-icon {
+            background: #e8edff;
+        }
+
+        .marks-icon {
+            background: #e1f7ed;
+        }
+
+        .attendance-icon {
+            background: #fff0dc;
+        }
+
+        .summary-card h3 {
+            color: #172554;
+            margin: 0 0 12px;
+        }
+
+        .summary-card .description {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+
+        .summary-details {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 14px;
+            min-height: 76px;
+            margin-bottom: 20px;
+            overflow-wrap: anywhere;
+        }
+
+        .summary-details p {
+            color: #334155;
+            font-size: 14px;
+            margin: 7px 0;
+        }
+
+        .summary-details .muted {
+            color: #64748b;
+        }
+
+        .summary-card button {
+            width: 100%;
+            padding: 11px;
+            border: none;
+            border-radius: 9px;
+            background: #2457d6;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .summary-card button:hover {
+            background: #1946b5;
+        }
+
+        .attendance-value {
+            font-size: 25px;
+            font-weight: 700;
+            color: #172554;
+        }
+
+        .status-good {
+            color: #15803d !important;
+        }
+
+        .status-low {
+            color: #c2410c !important;
+        }
+
+        @media (max-width: 850px) {
+            .cards {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 560px) {
+            .dashboard {
+                margin: 25px auto;
+                padding: 0 14px;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .summary-card {
+                padding: 20px;
+            }
+
+            .dashboard-heading h1 {
+                font-size: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>MLRIT Student Portal</h2>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="#" onclick="logout(); return false;">Logout</a>
+        </nav>
+    </header>
+
+    <main class="dashboard">
+        <div class="dashboard-heading">
+            <h1 id="welcomeMessage">Welcome, Student!</h1>
+            <p>Here's a quick overview of your academic information.</p>
+        </div>
+
+        <div class="cards">
+
+            <div class="summary-card">
+                <div class="card-icon profile-icon">👤</div>
+                <h3>Student Profile</h3>
+                <p class="description">Your personal and academic details.</p>
+
+                <div class="summary-details" id="profileSummary">
+                    <p class="muted">Loading profile...</p>
+                </div>
+
+                <button onclick="location.href='student-profile.html'">
+                    View Profile →
+                </button>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon marks-icon">📚</div>
+                <h3>Marks Summary</h3>
+                <p class="description">Check your recent subject marks.</p>
+
+                <div class="summary-details" id="marksSummary">
+                    <p class="muted">Loading marks...</p>
+                </div>
+
+                <button onclick="location.href='student-marks.html'">
+                    View All Marks →
+                </button>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon attendance-icon">📅</div>
+                <h3>Attendance Summary</h3>
+                <p class="description">Keep track of your class attendance.</p>
+
+                <div class="summary-details" id="attendanceSummary">
+                    <p class="muted">Loading attendance...</p>
+                </div>
+
+                <button onclick="location.href='student-attendance.html'">
+                    View Attendance →
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+
+    <script>
+        protectDashboard("Student");
+
+        const token = sessionStorage.getItem("token");
+
+        async function fetchStudentData(endpoint) {
+            const response = await fetch(
+                "http://localhost:3000" + endpoint,
+                {
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Unable to load data");
+            }
+
+            return response.json();
+        }
+
+        function addText(container, text, className = "") {
+            const p = document.createElement("p");
+            p.textContent = text;
+            if (className) p.className = className;
+            container.appendChild(p);
+        }
+
+        async function loadProfile() {
+            const box = document.getElementById("profileSummary");
+
+            try {
+                const data = await fetchStudentData("/api/student/profile");
+
+                document.getElementById("welcomeMessage").textContent =
+                    "Welcome, " + (data.full_name || "Student") + "!";
+
+                box.replaceChildren();
+
+                if (data.student_id) {
+                    addText(box, "Student ID: " + data.student_id);
+                }
+
+                if (data.department) {
+                    addText(box, "Department: " + data.department);
+                }
+
+                if (data.year_of_study) {
+                    addText(box, "Year: " + data.year_of_study);
+                }
+
+                if (!box.children.length) {
+                    addText(box, "Profile details unavailable.", "muted");
+                }
+            } catch (error) {
+                box.replaceChildren();
+                addText(box, "Unable to load profile.", "muted");
+                console.error(error);
+            }
+        }
+
+        async function loadMarks() {
+            const box = document.getElementById("marksSummary");
+
+            try {
+                const data = await fetchStudentData("/api/student/marks");
+                const marks = Array.isArray(data) ? data : data.marks;
+
+                box.replaceChildren();
+
+                if (!Array.isArray(marks) || marks.length === 0) {
+                    addText(box, "No marks available yet.", "muted");
+                    return;
+                }
+
+                const recentMarks = marks.slice(0, 3);
+
+                recentMarks.forEach(mark => {
+                    addText(
+                        box,
+                        mark.subject + ": " +
+                        mark.marks_obtained + " / " +
+                        mark.max_marks
+                    );
+                });
+
+                if (marks.length > 3) {
+                    addText(
+                        box,
+                        "+" + (marks.length - 3) + " more subjects",
+                        "muted"
+                    );
+                }
+            } catch (error) {
+                box.replaceChildren();
+                addText(box, "Unable to load marks.", "muted");
+                console.error(error);
+            }
+        }
+
+        async function loadAttendance() {
+            const box = document.getElementById("attendanceSummary");
+
+            try {
+                const data = await fetchStudentData("/api/student/attendance");
+                const records = Array.isArray(data) ? data : data.attendance;
+
+                box.replaceChildren();
+
+                if (!Array.isArray(records) || records.length === 0) {
+                    addText(box, "No attendance records available.", "muted");
+                    return;
+                }
+
+                let attended = 0;
+                let total = 0;
+
+                records.forEach(record => {
+                    attended += Number(record.classes_attended) || 0;
+                    total += Number(record.total_classes) || 0;
+                });
+
+                if (total <= 0) {
+                    addText(box, "Attendance percentage unavailable.", "muted");
+                    return;
+                }
+
+                const percentage = (attended / total) * 100;
+
+                addText(
+                    box,
+                    percentage.toFixed(2) + "%",
+                    "attendance-value"
+                );
+
+                addText(box, attended + " of " + total + " classes attended");
+
+                addText(
+                    box,
+                    percentage >= 75
+                        ? "Status: Good"
+                        : "Status: Below 75%",
+                    percentage >= 75 ? "status-good" : "status-low"
+                );
+            } catch (error) {
+                box.replaceChildren();
+                addText(box, "Unable to load attendance.", "muted");
+                console.error(error);
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem("token");
+            sessionStorage.removeItem("user");
+            window.location.href = "login.html?role=Student";
+        }
+
+        if (token) {
+            loadProfile();
+            loadMarks();
+            loadAttendance();
+        } else {
+            window.location.href = "login.html?role=Student";
+        }
+    </script>
+
+</body>
+</html>
